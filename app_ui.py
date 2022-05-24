@@ -61,11 +61,6 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.label_11, 2, 0, 1, 1)
         self.combo_type = QtWidgets.QComboBox(self.frame_2)
         self.combo_type.setObjectName("combo_type")
-        self.combo_type.addItem("")
-        self.combo_type.addItem("")
-        self.combo_type.addItem("")
-        self.combo_type.addItem("")
-        self.combo_type.addItem("")
         self.gridLayout.addWidget(self.combo_type, 2, 1, 1, 1)
         self.verticalLayout_3.addWidget(self.frame_2)
         spacerItem = QtWidgets.QSpacerItem(20, 250, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -315,7 +310,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuHelp.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget.setCurrentIndex(9)
+        self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -326,11 +321,6 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "ADC Serial Port"))
         self.label_3.setText(_translate("MainWindow", "Sensor Serial Port"))
         self.label_11.setText(_translate("MainWindow", "Type"))
-        self.combo_type.setItemText(0, _translate("MainWindow", "21-04227"))
-        self.combo_type.setItemText(1, _translate("MainWindow", "21-04122"))
-        self.combo_type.setItemText(2, _translate("MainWindow", "21-04070"))
-        self.combo_type.setItemText(3, _translate("MainWindow", "22-04416"))
-        self.combo_type.setItemText(4, _translate("MainWindow", "21-03929"))
         self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-weight:600;\">2- Confirm sensors</span></p><p><br/>Please check if the sensors are read properly by moving the platform </p><p>then click <span style=\" font-weight:600;\">Next</span></p><p><br/></p></body></html>"))
         self.label_6.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-weight:600;\">3- Zeroing reference</span></p><p><br/>Please wait.. Zeroing out sensor offsets. </p><p>Click <span style=\" font-weight:600;\">Next when it appears</span></p><p><br/></p></body></html>"))
         self.label_7.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-weight:600;\">4- Calibrating X+</span></p><p><br/>Please move the platform <span style=\" font-weight:600;\">red marker</span> in X+ direction to match checkpoints (<span style=\" font-weight:600;\">blue marker)</span></p><p><br/></p><p>Click <span style=\" font-weight:600;\">Next when you finish</span></p></body></html>"))

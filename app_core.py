@@ -14,7 +14,7 @@ from app_ui import *
 from qserialsensor import *
 from qserialadc import *
 import os
-import glob
+import json
 from pathlib import Path
 from functools import partial
 import logging
@@ -51,7 +51,14 @@ class CalibrationFSM(QObject):
 
     def __init__(self):
         super().__init__()
-        self.target_points = [5, 10, 20]
+        try:
+            with open('config.json', 'r') as f:
+                data = json.load(f)
+
+            self.target_points = data['checkpoints']
+        except Exception as e:
+            self.target_points = [5, 10, 20]
+
         self.calibration_channels =['x+', 'y+', 'x-', 'y-']
         self.current_channel = -1
         self.current_target = -1
@@ -240,6 +247,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.plot_cal_yn.addItem(self.curve_cal_yn_scatter)
 
     def run_defaults(self):
+        try:
+            with open('config.json', 'r') as f:
+                data = json.load(f)
+
+            types = data['types']
+
+        except Exception as e:
+            types = [ "21-04227", "21-04122", "21-04070", "22-04416", "21-03929"]
+        
+        self.ui.combo_type.addItems(types)
+            
         self.go_to_page(ui_pages.page_sensors_config)
         # self.go_to_page(ui_pages.page_calibrate_)
 

@@ -18,7 +18,7 @@
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>9</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="page_prepare">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -83,33 +83,7 @@
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QComboBox" name="combo_type">
-             <item>
-              <property name="text">
-               <string>21-04227</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>21-04122</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>21-04070</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>22-04416</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>21-03929</string>
-              </property>
-             </item>
-            </widget>
+            <widget class="QComboBox" name="combo_type"/>
            </item>
           </layout>
          </widget>
