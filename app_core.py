@@ -528,10 +528,14 @@ class MainWindow(QtWidgets.QMainWindow):
         sensor_data_unique, unique_idx = np.unique(sensor_data[condition], return_index=True)
         adc_data_unique = adc_data[condition][unique_idx]
         
+        sensor_data_unique = np.abs(sensor_data_unique)
+        adc_data_unique = np.abs(adc_data_unique)
+
+
         obj['sensor'] = sensor_data_unique
         obj['adc'] = adc_data_unique
-        obj['adc_max'] = adc_data.max()
-        obj['adc_min'] = adc_data.min()
+        obj['adc_max'] = adc_data_unique[adc_data_unique>1].max()
+        obj['adc_min'] = adc_data_unique[adc_data_unique>1].min()
         # curve fitting
         m,c = self.fitter.linear_fit(adc_data_unique, sensor_data_unique)
         obj['cal_coeff'] = m, c
@@ -567,13 +571,13 @@ class MainWindow(QtWidgets.QMainWindow):
             y_data = y_data.reshape((len(x_data)))
 
             # plot
-            if k == 'xp':
+            if k == 'x+':
                 curve = self.curve_cal_result_xp
                 scatter = self.curve_cal_xp_scatter
-            elif k == 'yp':
+            elif k == 'y+':
                 curve = self.curve_cal_result_yp
                 scatter = self.curve_cal_yp_scatter
-            elif k == 'xn':
+            elif k == 'x-':
                 curve = self.curve_cal_result_xn
                 scatter = self.curve_cal_xn_scatter
             else:

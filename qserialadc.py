@@ -131,25 +131,25 @@ class QADCSensor(QSerialPort):
         commands_queue = []
 
         # composing the commands
-        set_type = f'set_type {type}'
+        set_type = f'<set_type {type}>\n'
         commands_queue.append(set_type)
 
         for axis, vals in cal_object.items():
             
-            command1 = '<SET_CALIB {SENSOR_ID} 1 {Y} {X}>'.format(
+            command1 = '<SET_CALIB {SENSOR_ID} 1 {Y} {X}>\n'.format(
                 SENSOR_ID = axis_to_int[axis],
                 Y = int(vals['points'][0]*100),
                 X = int(vals['points'][1])
             )
 
-            command2 = '<SET_CALIB {SENSOR_ID} 2 {Y} {X}>'.format(
+            command2 = '<SET_CALIB {SENSOR_ID} 2 {Y} {X}>\n'.format(
                 SENSOR_ID = axis_to_int[axis],
                 Y = int(vals['points'][2]*100),
                 X = int(vals['points'][3])
             )
             commands_queue.append(command1)
             commands_queue.append(command2)
-        commands_queue.append('<save>')
+        commands_queue.append('<save>\n')
 
         # sending commands
         for command in commands_queue:
