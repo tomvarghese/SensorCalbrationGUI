@@ -8,7 +8,7 @@ from PyQt5.QtCore import *
 import sys
 
 from enum import Enum
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from app_ui import *
 from qserialsensor import *
