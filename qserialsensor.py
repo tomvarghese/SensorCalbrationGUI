@@ -70,13 +70,14 @@ class QSerialSensor(QSerialPort):
 
     def parse_packet(self,bytes):
         # $CSTLT,-0000.7,-0012.8,+0999.9,-000.03,-000.73,+022*79\r\n
-        line = str(bytes, 'utf-8')
+       
         # fields = line.strip().split(',')
         try:
+            line = str(bytes, 'utf-8')
             vals =[float(f) for f in line.strip().split(',')[1:-1]]
             return (vals[-2],vals[-1])
         except Exception as e:
-            pass
+            return None
 
 
     def on_serial_read(self):

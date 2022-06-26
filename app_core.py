@@ -35,12 +35,10 @@ class ui_pages(Enum):
     page_sensors_config = 1
     page_confirm_sensors = 2
     page_dc_cancel = 3
-    page_calibrate_xp = 4
-    page_calibrate_yp = 5
-    page_calibrate_xn = 6
-    page_calibrate_yn = 7
-    page_calibration_results = 8
-    page_saving_calibration = 9
+    page_calibrate = 4
+    page_calibration_results = 5
+    page_saving_calibration = 6
+    page_calibration_test = 7
 
 class CalibrationFSM(QObject):
     signal_calibration_started = pyqtSignal()
@@ -51,13 +49,8 @@ class CalibrationFSM(QObject):
 
     def __init__(self):
         super().__init__()
-        try:
-            with open('config.json', 'r') as f:
-                data = json.load(f)
-
-            self.target_points = data['checkpoints']
-        except Exception as e:
-            self.target_points = [5, 10, 20]
+        
+        self.target_points = [5, 10, 20]
 
         self.calibration_channels =['x+', 'y+', 'x-', 'y-']
         self.current_channel = -1
@@ -80,6 +73,7 @@ class CalibrationFSM(QObject):
         self.current_channel = 0
         self.current_target = 0
         self.started = True
+        self.finished = False
         self.signal_calibration_started.emit()
 
     def target(self):
@@ -107,7 +101,8 @@ class CalibrationFSM(QObject):
             self.current_target = 0
         else:
             self.signal_calibration_ended.emit()
-            self.started = False
+            # self.started = False
+            self.finished = True
          
 class MainWindow(QtWidgets.QMainWindow):
     
@@ -116,6 +111,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.app=app
+        
 
         self.settings = SerialSettings()
         self.cal = CalibrationFSM()
@@ -155,6 +151,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.btn_next.clicked.connect(self.proceed)
         self.ui.btn_refresh.clicked.connect(self.update_com_ports)
         self.ui.btn_rese_cal.clicked.connect(lambda x: self.go_to_page(ui_pages.page_confirm_sensors))
+        self.ui.combo_type.currentIndexChanged.connect(self.type_changed)
 
         self.sensor.interface.block_packets_ready.connect(self.__confirm_plot_sensor_readings__)
         self.adc.interface.block_packets_ready.connect(self.__confirm_plot_adc_readings__)
@@ -165,6 +162,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cal.signal_calibration_target_moved.connect(self.__calibration_target_moved__)
 
         self.adc.interface.results_saved.connect(self.__results_saved__)
+
+
 
     def prepare_plots(self):
         self.ui.plot_xyn.setBackground(QtGui.QColor('white'))
@@ -246,18 +245,32 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.plot_cal_xn.addItem(self.curve_cal_xn_scatter)
         self.ui.plot_cal_yn.addItem(self.curve_cal_yn_scatter)
 
+    def type_changed(self):
+        new_part = self.ui.combo_type.currentText().strip()
+        self.deadzone = self.data[new_part]['dead_zone']
+        self.cal.target_points = self.data[new_part]['checkpoints']
+        logging.debug(f'Using part no={new_part} with deadzone={self.deadzone} and checpoints ={self.cal.target_points}')
+
     def run_defaults(self):
         try:
             with open('config.json', 'r') as f:
-                data = json.load(f)
+                self.data = json.load(f)
 
-            types = data['types']
-
+            types = list(self.data.keys())
         except Exception as e:
+            # default values in case json is not readable for some reason
             types = [ "21-04227", "21-04122", "21-04070", "22-04416", "21-03929"]
         
+        
+        
         self.ui.combo_type.addItems(types)
-            
+        
+        # populate using first item in the combox
+        self.deadzone = self.data[types[0]]['dead_zone']
+        self.cal.target_points = self.data[types[0]]['checkpoints']
+
+        logging.debug(f'Using part no={types[0]} with deadzone={self.deadzone} and checpoints ={self.cal.target_points}')
+
         self.go_to_page(ui_pages.page_sensors_config)
         # self.go_to_page(ui_pages.page_calibrate_)
 
@@ -276,23 +289,27 @@ class MainWindow(QtWidgets.QMainWindow):
         elif target_page == ui_pages.page_confirm_sensors:
             pass
         
-        elif target_page == ui_pages.page_calibrate_xp:
+        elif target_page == ui_pages.page_calibrate:
             self.__calibration_start_xp__()
         
-        elif target_page == ui_pages.page_calibrate_yp:
-            self.__calibration_start_yp__()
+        # elif target_page == ui_pages.page_calibrate_yp:
+        #     self.__calibration_start_yp__()
 
-        elif target_page == ui_pages.page_calibrate_xn:
-            self.__calibration_start_xn__()
+        # elif target_page == ui_pages.page_calibrate_xn:
+        #     self.__calibration_start_xn__()
         
-        elif target_page == ui_pages.page_calibrate_yn:
-            self.__calibration_start_yn__()
+        # elif target_page == ui_pages.page_calibrate_yn:
+        #     self.__calibration_start_yn__()
         
         elif target_page == ui_pages.page_calibration_results:
+            self.ui.btn_next.show()
             self.__populate_calibration_graphs__()
         
         elif target_page == ui_pages.page_saving_calibration:
             self.__save_calibration_results__()
+            
+        elif target_page == ui_pages.page_calibration_test:
+            self.__calibration_test__()
                      
     def dynamic_gui(self):
         idx = self.ui.stackedWidget.currentIndex()
@@ -324,8 +341,9 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 # Error
                 return
-        elif current_page == ui_pages.page_saving_calibration:
-            target_page = ui_pages.page_welcome
+        elif current_page == ui_pages.page_calibration_test:
+            sys.exit(0)
+            # target_page = ui_pages.page_welcome
 
         else:
             if idx+1 >=len(ui_pages):
@@ -377,7 +395,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.curve_x.setData(sensor_x)
             self.curve_y.setData(sensor_y)
-        else:
+        
+        
+        # else:
+        elif self.cal.finished == False:
             # This means we are in calibration mode. so, we will forward the reading to the
             # calibration progressbar
             xreading, yreading = abs(blocks[-1][0]), abs(blocks[-1][1])
@@ -385,17 +406,23 @@ class MainWindow(QtWidgets.QMainWindow):
             reading = xreading if channel.startswith('x') else yreading
 
             # getting the approperiate progress bar
-            if channel == 'x+':
-                progress = self.ui.progressBar_xp
-            elif channel == 'y+':
-                progress = self.ui.progressBar_yp
-            elif channel == 'x-':
-                progress = self.ui.progressBar_xn
-            elif channel == 'y-':
-                progress = self.ui.progressBar_yn
+            # if channel == 'x+':
+            #     progress = self.ui.progressBar_xp
+            # elif channel == 'y+':
+            #     progress = self.ui.progressBar_yp
+            # elif channel == 'x-':
+            #     progress = self.ui.progressBar_xn
+            # elif channel == 'y-':
+            #     progress = self.ui.progressBar_yn
 
-            progress.setValueF(reading)
+            progress = self.ui.graphicsView
+            progress.set_value(reading)
             self.__calibration_step__(reading, channel, progress)
+        else:
+            # just disale the sensor readings
+            self.sensor.dsp.set_enabled('all', False)
+            self.sensor.close()
+
 
     def __confirm_plot_adc_readings__(self, blocks):
         if not self.cal.started:
@@ -409,13 +436,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.curve_xn.setData(xn)
             self.curve_yn.setData(yn)
-
+        
+        elif self.cal.finished:
+            packet_xy_xnxy = blocks[0]
+            yp = packet_xy_xnxy[0]/100
+            xp = packet_xy_xnxy[1]/100
+            yn = packet_xy_xnxy[2]/100
+            xn = packet_xy_xnxy[3]/100
+            self.ui.graphicsView_2.set_value_yp(yp)
+            self.ui.graphicsView_2.set_value_xp(xp)
+            self.ui.graphicsView_2.set_value_yn(yn)
+            self.ui.graphicsView_2.set_value_xn(xn)
+        
     # Calibration work
     def __calibration_start_xp__(self):
         self.ui.btn_next.hide()
         self.cal.start_calibration()
         target = self.cal.target()
-        self.ui.progressBar_xp.set_target(target)
+        
+        self.ui.graphicsView.next_axis()
+        self.ui.graphicsView.set_target(target)
+        
+        # self.ui.progressBar_xp.set_target(target)
 
         # reseting all dsp channels and turning them off
         # we will turn on them one by one
@@ -432,7 +474,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.cal.start_calibration()
         self.ui.btn_next.hide()
         target = self.cal.target()
-        self.ui.progressBar_yp.set_target(target)
+        # self.ui.progressBar_yp.set_target(target)
+        
+        # self.ui.graphicsView.next_axis()
+        self.ui.graphicsView.set_target(target)
 
         # reseting all dsp channels and turning them off
         # we will turn on them one by one
@@ -448,7 +493,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.cal.start_calibration()
         self.ui.btn_next.hide()
         target = self.cal.target()
-        self.ui.progressBar_xn.set_target(target)
+        # self.ui.progressBar_xn.set_target(target)
+        
+        # self.ui.graphicsView.next_axis()
+        self.ui.graphicsView.set_target(target)
 
         # reseting all dsp channels and turning them off
         # we will turn on them one by one
@@ -464,8 +512,11 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.cal.start_calibration()
         self.ui.btn_next.hide()
         target = self.cal.target()
-        self.ui.progressBar_yn.set_target(target)
+        # self.ui.progressBar_yn.set_target(target)
 
+        # self.ui.graphicsView.next_axis()
+        self.ui.graphicsView.set_target(target)
+        
         # reseting all dsp channels and turning them off
         # we will turn on them one by one
         self.sensor.dsp.reset()
@@ -524,7 +575,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
 
         # getting unqiue 
-        condition = sensor_data > 5 if channel[-1] =='+' else sensor_data < -5
+        margin = self.deadzone
+        condition = sensor_data > margin if channel[-1] =='+' else sensor_data < -margin
         sensor_data_unique, unique_idx = np.unique(sensor_data[condition], return_index=True)
         adc_data_unique = adc_data[condition][unique_idx]
         
@@ -540,13 +592,37 @@ class MainWindow(QtWidgets.QMainWindow):
         m,c = self.fitter.linear_fit(adc_data_unique, sensor_data_unique)
         obj['cal_coeff'] = m, c
 
-        xmin, xmax = obj['adc_min'], obj['adc_max']
-        ymin, ymax = (m*xmin)+c, (m*xmax)+c
+        # xmin, xmax = obj['adc_min'], obj['adc_max']
+        # ymin, ymax = (m*xmin)+c, (m*xmax)+c
+        ymin, ymax = margin, self.cal.target_points[-1]
+        xmin, xmax = (ymin-c)/m, (ymax-c)/m
+
         obj['points'] = [ymin, xmin, ymax, xmax]
         self.cal.calibrations[channel] = obj
 
         logging.debug(f"Fitting for channel={channel} done")
-        self.ui.btn_next.show()
+        
+        self.ui.graphicsView.next_axis()
+        next_axis = self.ui.graphicsView.current_axis()
+        
+        if next_axis is None:
+            # This means we have finished
+            self.go_to_page(ui_pages.page_calibration_results)
+            self.adc.reset_all()
+            self.sensor.reset_all()
+            self.adc.dsp.set_enabled('all', False)
+            self.sensor.dsp.set_enabled('all', False)
+            
+        elif next_axis == 'yp':
+            self.__calibration_start_yp__()
+        
+        elif next_axis == 'xn':
+            self.__calibration_start_xn__()
+            
+        elif next_axis == 'yn':
+            self.__calibration_start_yn__()
+            
+        # self.ui.btn_next.show()
 
     def __calibration_target_moved__(self, target):
         # disable all again
@@ -588,13 +664,19 @@ class MainWindow(QtWidgets.QMainWindow):
             scatter.setData(adc_data,sensor_data)
 
     def __save_calibration_results__(self):
-        self.ui.btn_next.hide()
+        # self.ui.btn_next.hide()
         type = self.ui.combo_type.currentText()
         self.adc.save_results(self.cal.calibrations, type)
+    
+    
+    def __calibration_test__(self):
+        self.ui.btn_next.show()
+        self.ui.btn_next.setText('Finish')
     
     def __results_saved__(self, args={}):
         self.ui.btn_next.show()
         # reset everything
+        self.adc.live_read()
 
 
     # Testing functions

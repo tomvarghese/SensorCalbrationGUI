@@ -14,7 +14,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     mainWin = MainWindow(app)
-
+    mainWin.setWindowTitle('SensorCalibration')
     # mainWin.ui.plot_widget.setBackground(QtGui.QColor('white'))
     # mainWin.ui.plot_widget_xp.setBackground(QtGui.QColor('white'))
     # mainWin.ui.plot_widget_xn.setBackground(QtGui.QColor('white'))
